@@ -1,0 +1,1012 @@
+{
+  "title": "Bushfire Sentinel",
+  "description": "Yarra Ranges regional bushfire CPS monitoring dashboard.",
+  "inputs": {
+    "input_time_local": {
+      "options": {
+        "defaultValue": "-60m,now",
+        "token": "time_local"
+      },
+      "type": "input.timerange"
+    },
+    "input_time_risk": {
+      "options": {
+        "defaultValue": "-60m,now",
+        "token": "time_risk"
+      },
+      "type": "input.timerange"
+    },
+    "input_time_weather": {
+      "options": {
+        "defaultValue": "-60m,now",
+        "token": "time_weather"
+      },
+      "type": "input.timerange"
+    }
+  },
+  "defaults": {
+    "dataSources": {
+      "ds.search": {
+        "options": {
+          "refresh": "30s",
+          "refreshType": "delay"
+        }
+      }
+    }
+  },
+  "visualizations": {
+    "actuator_failures_60m": {
+      "dataSources": {
+        "primary": "ds_actuator_failures_60m"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "fontColor": "#c92a2a",
+        "majorColor": "#c92a2a",
+        "sparklineDisplay": "off",
+        "trendDisplay": "off",
+        "underLabel": "FAILED + NO_RESPONSE"
+      },
+      "title": "Actuator Failures 60m",
+      "type": "splunk.singlevalue"
+    },
+    "actuator_table": {
+      "dataSources": {
+        "primary": "ds_latest_feedback"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "fontColor": "#168653",
+        "majorColor": "#168653",
+        "sparklineDisplay": "off",
+        "trendDisplay": "off",
+        "underLabel": "Python actuator response"
+      },
+      "title": "Latest Feedback",
+      "type": "splunk.singlevalue"
+    },
+    "alert_activity_sparklines": {
+      "dataSources": {
+        "primary": "ds_alert_activity_sparklines"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "legendDisplay": "right",
+        "seriesColors": [
+          "#c92a2a",
+          "#d97706",
+          "#eab308",
+          "#1f6fb2",
+          "#168653",
+          "#6d58c8"
+        ]
+      },
+      "title": "Alert Mix 24h",
+      "type": "splunk.pie"
+    },
+    "alert_table": {
+      "dataSources": {
+        "primary": "ds_alert_table"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "columnFormat": {
+          "Severity": {
+            "width": 60
+          },
+          "Time": {
+            "width": 60
+          },
+          "Type": {
+            "width": 60
+          }
+        },
+        "count": 5
+      },
+      "title": "Recent Alert Evidence",
+      "type": "splunk.table"
+    },
+    "control_loop": {
+      "dataSources": {
+        "primary": "ds_control_loop"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "columnFormat": {
+          "Actuator Feedback": {
+            "width": 158
+          },
+          "Command Time": {
+            "width": 140
+          },
+          "Node-RED Command": {
+            "width": 177
+          },
+          "Response ms": {
+            "width": 132
+          },
+          "Rule Reason": {
+            "width": 337
+          }
+        },
+        "count": 5
+      },
+      "title": "Control Loop Evidence",
+      "type": "splunk.table"
+    },
+    "control_table": {
+      "dataSources": {
+        "primary": "ds_latest_command"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "fontColor": "#1f6fb2",
+        "majorColor": "#1f6fb2",
+        "sparklineDisplay": "off",
+        "trendDisplay": "off",
+        "underLabel": "Node-RED output"
+      },
+      "title": "Latest Command",
+      "type": "splunk.singlevalue"
+    },
+    "fire_score": {
+      "context": {
+        "scoreColorConfig": [
+          {
+            "to": 25,
+            "value": "#168653"
+          },
+          {
+            "from": 25,
+            "to": 50,
+            "value": "#eab308"
+          },
+          {
+            "from": 50,
+            "to": 75,
+            "value": "#d97706"
+          },
+          {
+            "from": 75,
+            "value": "#c92a2a"
+          }
+        ]
+      },
+      "dataSources": {
+        "primary": "ds_fire_score"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "majorColor": "> majorValue | rangeValue(scoreColorConfig)",
+        "maxValue": 100,
+        "numberPrecision": 0,
+        "radialBackgroundColor": "#e8f1ec",
+        "radialStrokeColor": "> majorValue | rangeValue(scoreColorConfig)",
+        "trendDisplay": "off",
+        "underLabel": "Rule-based fire risk score",
+        "unit": "/100",
+        "unitPosition": "after"
+      },
+      "title": "Fire Risk Score",
+      "type": "splunk.singlevalueradial"
+    },
+    "header": {
+      "options": {
+        "backgroundColor": "#1f5b45",
+        "fontColor": "#f7fff9",
+        "markdown": "# 🔥 Bushfire Sentinel\n\nYarra Ranges CPS monitoring · Node-RED control · Splunk dashboard"
+      },
+      "type": "splunk.markdown"
+    },
+    "local_trends": {
+      "dataSources": {
+        "primary": "ds_local_trends"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "legendDisplay": "right",
+        "nullValueDisplay": "connect",
+        "seriesColors": [
+          "#6d58c8",
+          "#d97706",
+          "#168653"
+        ],
+        "xAxisTitleText": "Time",
+        "yAxisTitleText": "Value"
+      },
+      "title": "Main Site Local Sensors",
+      "type": "splunk.line"
+    },
+    "min_humidity_1h": {
+      "dataSources": {
+        "primary": "ds_min_humidity_1h"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "fontColor": "#6d58c8",
+        "majorColor": "#6d58c8",
+        "sparklineDisplay": "off",
+        "trendDisplay": "off",
+        "underLabel": "Lowest humidity at main site",
+        "unit": "%",
+        "unitPosition": "after"
+      },
+      "title": "Main Site Min Humidity 1h",
+      "type": "splunk.singlevalue"
+    },
+    "rain_last_1h": {
+      "dataSources": {
+        "primary": "ds_rain_last_1h"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "fontColor": "#008c8c",
+        "majorColor": "#008c8c",
+        "sparklineDisplay": "off",
+        "trendDisplay": "off",
+        "underLabel": "Main site precipitation total",
+        "unit": " mm",
+        "unitPosition": "after"
+      },
+      "title": "Main Site Rain Last 1h",
+      "type": "splunk.singlevalue"
+    },
+    "response_capacity": {
+      "dataSources": {
+        "primary": "ds_response_capacity"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "fontColor": "#168653",
+        "majorColor": "#168653",
+        "sparklineDisplay": "off",
+        "trendDisplay": "off"
+      },
+      "title": "Response Capacity",
+      "type": "splunk.singlevalue"
+    },
+    "risk_level": {
+      "dataSources": {
+        "primary": "ds_risk_level"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "fontColor": "#d97706",
+        "majorColor": "#d97706",
+        "sparklineDisplay": "off",
+        "trendDisplay": "off"
+      },
+      "title": "Risk Level",
+      "type": "splunk.singlevalue"
+    },
+    "risk_table": {
+      "dataSources": {
+        "primary": "ds_risk_table"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "columnFormat": {
+          "Command": {
+            "width": 105
+          },
+          "Factors": {
+            "width": 300
+          },
+          "Risk": {
+            "width": 85
+          },
+          "Score": {
+            "width": 78
+          },
+          "Status": {
+            "width": 106
+          },
+          "Time": {
+            "width": 85
+          }
+        },
+        "count": 5
+      },
+      "title": "Recent Decision State Changes",
+      "type": "splunk.table"
+    },
+    "risk_trend": {
+      "dataSources": {
+        "primary": "ds_risk_trend"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "legendDisplay": "off",
+        "nullValueDisplay": "gaps",
+        "seriesColors": [
+          "#c92a2a"
+        ],
+        "xAxisTitleText": "Time",
+        "yAxisTitleText": "Rule score"
+      },
+      "title": "Fire Risk Score Over Time",
+      "type": "splunk.area"
+    },
+    "section_control": {
+      "options": {
+        "backgroundColor": "#d8eadf",
+        "fontColor": "#22362c",
+        "markdown": "### CPS Response Loop"
+      },
+      "type": "splunk.markdown"
+    },
+    "section_environment": {
+      "options": {
+        "backgroundColor": "#d8eadf",
+        "fontColor": "#22362c",
+        "markdown": "### Environmental Context"
+      },
+      "type": "splunk.markdown"
+    },
+    "section_evidence": {
+      "options": {
+        "backgroundColor": "#d8eadf",
+        "fontColor": "#22362c",
+        "markdown": "### Decision and Alert Evidence"
+      },
+      "type": "splunk.markdown"
+    },
+    "section_local": {
+      "options": {
+        "backgroundColor": "#d8eadf",
+        "fontColor": "#22362c",
+        "markdown": "### Main Site Local Conditions"
+      },
+      "type": "splunk.markdown"
+    },
+    "section_summary": {
+      "options": {
+        "backgroundColor": "#d8eadf",
+        "fontColor": "#22362c",
+        "markdown": "### Operational Summary"
+      },
+      "type": "splunk.markdown"
+    },
+    "sensor_sparklines": {
+      "dataSources": {
+        "primary": "ds_sensor_sparklines"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "columnFormat": {
+          "Average 60m": {
+            "width": 125
+          },
+          "Latest": {
+            "width": 84
+          },
+          "Recent Trend": {
+            "width": 145
+          },
+          "Sensor": {
+            "width": 118
+          }
+        },
+        "count": 7
+      },
+      "title": "Main Site Sensor Overview 60m",
+      "type": "splunk.table"
+    },
+    "sprinkler_feedback": {
+      "context": {
+        "controlStatusColor": [
+          {
+            "match": "Standby",
+            "value": "#168653"
+          },
+          {
+            "match": "Warning Sent",
+            "value": "#d97706"
+          },
+          {
+            "match": "Sprinkler Active",
+            "value": "#1f6fb2"
+          },
+          {
+            "match": "Emergency Alert",
+            "value": "#c92a2a"
+          },
+          {
+            "match": "Actuator Failed",
+            "value": "#c92a2a"
+          },
+          {
+            "match": "No Response",
+            "value": "#c92a2a"
+          },
+          {
+            "match": "Waiting Feedback",
+            "value": "#6b7280"
+          }
+        ]
+      },
+      "dataSources": {
+        "primary": "ds_sprinkler_feedback"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "fontColor": "> majorValue | matchValue(controlStatusColor)",
+        "majorColor": "> majorValue | matchValue(controlStatusColor)",
+        "sparklineDisplay": "off",
+        "trendDisplay": "off",
+        "underLabel": "command + actuator feedback"
+      },
+      "title": "Control Status",
+      "type": "splunk.singlevalue"
+    },
+    "system_status": {
+      "dataSources": {
+        "primary": "ds_system_status"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "fontColor": "#1f6fb2",
+        "majorColor": "#1f6fb2",
+        "sparklineDisplay": "off",
+        "trendDisplay": "off"
+      },
+      "title": "System Status",
+      "type": "splunk.singlevalue"
+    },
+    "weather_latest": {
+      "dataSources": {
+        "primary": "ds_weather_latest"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "legendDisplay": "bottom",
+        "seriesColors": [
+          "#d97706",
+          "#1f6fb2"
+        ],
+        "xAxisTitleText": "Site",
+        "yAxisTitleText": "Latest raw value"
+      },
+      "title": "Temp and Wind By Site",
+      "type": "splunk.column"
+    },
+    "weather_risk_drivers": {
+      "dataSources": {
+        "primary": "ds_weather_risk_drivers"
+      },
+      "options": {
+        "backgroundColor": "#fbfefb",
+        "legendDisplay": "right",
+        "nullValueDisplay": "connect",
+        "seriesColors": [
+          "#d97706",
+          "#1f6fb2"
+        ],
+        "xAxisTitleText": "Time",
+        "yAxisTitleText": "Raw value"
+      },
+      "title": "Main Site Weather Pressure",
+      "type": "splunk.line"
+    }
+  },
+  "dataSources": {
+    "ds_actuator_failures_60m": {
+      "options": {
+        "query": "index=bushfire_sentinel (\"FAILED\" OR \"NO_RESPONSE\") | rex field=_raw \"\\\"command_id\\\":\\\"(?<command_id>[^\\\"]+)\" | rex field=_raw \"\\\"sprinkler_status\\\":\\\"(?<sprinkler_status>[^\\\"]+)\" | rex field=_raw \"\\\"sensor\\\":\\\"(?<sensor>[^\\\"]+)\" | rex field=_raw \"\\\"value\\\":\\\"?(?<raw_value>[^\\\",}]+)\" | eval Feedback=coalesce(sprinkler_status, if(sensor=\"sprinkler_status\", raw_value, null())) | where Feedback=\"FAILED\" OR Feedback=\"NO_RESPONSE\" | dedup command_id Feedback | stats count as value | table value",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_alert_activity_sparklines": {
+      "options": {
+        "query": "index=bushfire_sentinel (\"severity\" OR \"event_type\" OR \"alert_type\") | spath path=severity output=severity | spath path=event_type output=event_type | spath path=alert_type output=alert_type | eval Type=case(event_type=\"validation_reject\",\"Validation\", event_type=\"anomaly\",\"Anomaly\", event_type=\"weather_fetch_error\",\"Weather API\", alert_type=\"FIRE_RISK\",\"Fire Risk\", alert_type=\"RESPONSE_CAPACITY\",\"Response\", true(),\"Other\") | stats count as Count by Type | sort - Count | table Type Count",
+        "queryParameters": {
+          "earliest": "-24h",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_alert_table": {
+      "options": {
+        "query": "index=bushfire_sentinel (\"severity\" OR \"event_type\" OR \"alert_type\") | sort - _time | spath path=severity output=severity | spath path=event_type output=event_type | spath path=alert_type output=alert_type | spath path=message output=message | spath path=error output=error | spath path=errors{} output=validation_errors | spath path=anomalies{}.type output=anomaly_type | spath path=anomalies{}.sensor output=anomaly_sensor | spath path=source_message.sensor output=source_sensor | spath path=original.sensor output=original_sensor | eval Time=strftime(_time,\"%H:%M:%S\") | eval Type=case(event_type=\"validation_reject\",\"Validation\", event_type=\"anomaly\",\"Anomaly\", alert_type=\"FIRE_RISK\",\"Fire Risk\", alert_type=\"RESPONSE_CAPACITY\",\"Response\", isnotnull(alert_type),alert_type, true(),coalesce(event_type,\"Alert\")) | eval Sensor=coalesce(mvindex(anomaly_sensor,0),source_sensor,original_sensor,if(alert_type=\"RESPONSE_CAPACITY\",\"sprinkler_status\",\"-\")) | eval validation_reason=mvjoin(validation_errors,\", \") | eval anomaly_reason=mvjoin(anomaly_type,\", \") | eval Message=case(event_type=\"validation_reject\" AND isnotnull(validation_reason) AND validation_reason!=\"\", validation_reason, event_type=\"anomaly\" AND isnotnull(anomaly_reason) AND anomaly_reason!=\"\", anomaly_reason, isnotnull(message), message, isnotnull(error), error, true(), \"-\") | table Time severity Type Sensor Message | head 6 | rename severity as Severity",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_control_loop": {
+      "options": {
+        "query": "index=bushfire_sentinel \"sprinkler_command\" | spath path=command_id output=command_id | spath path=sprinkler_command output=sprinkler_command | spath path=reason output=reason | eval command_time=strftime(_time,\"%H:%M:%S\") | table command_id command_time sprinkler_command reason | join type=left command_id [ search index=bushfire_sentinel (\"sprinkler_status\" OR \"sensor\":\"sprinkler_status\") | spath path=command_id output=command_id | spath path=sprinkler_status output=sprinkler_status | spath path=sensor output=sensor | spath path=value output=value | spath path=response_time_ms output=response_time_ms | eval feedback_time=strftime(_time,\"%H:%M:%S\") | eval feedback=coalesce(sprinkler_status,value) | stats latest(feedback_time) as feedback_time latest(feedback) as feedback latest(response_time_ms) as response_time_ms by command_id ] | eval feedback=coalesce(feedback,\"Waiting / no feedback\"), response_time_ms=coalesce(response_time_ms,\"-\") | sort - command_time | head 6 | rename command_time as \"Command Time\" command_id as \"Command ID\" sprinkler_command as \"Node-RED Command\" reason as \"Rule Reason\" feedback as \"Actuator Feedback\" response_time_ms as \"Response ms\" | eval \"Node-RED Command\"=replace('Node-RED Command', \"_\", \" \") | eval \"Node-RED Command\"=upper(substr('Node-RED Command',1,1)).lower(substr('Node-RED Command',2)) | eval \"Rule Reason\"=upper(substr('Rule Reason',1,1)).lower(substr('Rule Reason',2)) | eval \"Actuator Feedback\"=upper(substr('Actuator Feedback',1,1)).lower(substr('Actuator Feedback',2)) | table \"Command Time\" \"Node-RED Command\" \"Rule Reason\" \"Actuator Feedback\" \"Response ms\"",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_fire_score": {
+      "options": {
+        "query": "index=bushfire_sentinel \"fire_risk_score\" | spath path=fire_risk_score output=fire_risk_score | eval value=tonumber(fire_risk_score) | where isnotnull(value) | stats latest(value) as value | table value",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_latest_command": {
+      "options": {
+        "query": "index=bushfire_sentinel \"sprinkler_command\" | rex field=_raw \"\\\"sprinkler_command\\\":\\\"(?<Command>[^\\\"]+)\" | eval Command=case(Command=\"SEND_WARNING\",\"Warning\",Command=\"ACTIVATE_SPRINKLER\",\"Activate Sprinkler\",Command=\"EMERGENCY_ALERT\",\"Emergency Alert\",Command=\"STANDBY\",\"Standby\",true(),Command) | stats latest(Command) as value | eval value=coalesce(value,\"None\") | table value",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_latest_feedback": {
+      "options": {
+        "query": "index=bushfire_sentinel (\"sprinkler_status\" OR \"NO_RESPONSE\" OR \"FAILED\") | rex field=_raw \"\\\"sprinkler_status\\\":\\\"(?<sprinkler_status>[^\\\"]+)\" | rex field=_raw \"\\\"sensor\\\":\\\"(?<sensor>[^\\\"]+)\" | rex field=_raw \"\\\"value\\\":\\\"?(?<raw_value>[^\\\",}]+)\" | eval Feedback=coalesce(sprinkler_status, if(sensor=\"sprinkler_status\", raw_value, null()), \"Unknown\") | eval Feedback=case(Feedback=\"OFF\",\"Off\",Feedback=\"ON\",\"On\",Feedback=\"FAILED\",\"Failed\",Feedback=\"NO_RESPONSE\",\"No Response\",true(),Feedback) | stats latest(Feedback) as value | table value",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_local_trends": {
+      "options": {
+        "query": "index=bushfire_sentinel (\"smoke_level\" OR \"soil_dryness\" OR \"water_tank_level\") | spath path=timestamp output=json_timestamp | spath path=device_id output=json_device_id | spath path=sensor output=json_sensor | spath path=value output=json_value | eval clean_time=replace(json_timestamp,\"Z\",\"+0000\") | eval event_time=coalesce(strptime(clean_time,\"%Y-%m-%dT%H:%M:%S.%3N%z\"),strptime(clean_time,\"%Y-%m-%dT%H:%M:%S%z\")) | eval _time=coalesce(event_time,_time) | eval reading=tonumber(json_value) | where json_device_id=\"station_01\" AND json_sensor IN (\"smoke_level\",\"soil_dryness\",\"water_tank_level\") AND isnotnull(reading) | eval metric=case(json_sensor=\"smoke_level\",\"Smoke\",json_sensor=\"soil_dryness\",\"Soil Dryness\",json_sensor=\"water_tank_level\",\"Water Tank\",true(),json_sensor) | timechart span=30s avg(reading) by metric",
+        "queryParameters": {
+          "earliest": "$time_local.earliest$",
+          "latest": "$time_local.latest$"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_min_humidity_1h": {
+      "options": {
+        "query": "index=bushfire_sentinel \"relative_humidity\" | spath path=device_id output=device_id | spath path=sensor output=sensor | spath path=value output=json_value | eval reading=tonumber(json_value) | where device_id=\"station_01\" AND sensor=\"relative_humidity\" AND isnotnull(reading) | stats min(reading) as value | eval value=round(value,1) | table value",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_rain_last_1h": {
+      "options": {
+        "query": "index=bushfire_sentinel \"precipitation\" | spath path=device_id output=json_device_id | spath path=sensor output=json_sensor | spath path=value output=json_value | where json_device_id=\"station_01\" AND json_sensor=\"precipitation\" | eval value=tonumber(json_value) | stats sum(value) as value | append [ | makeresults | eval value=0 ] | stats max(value) as value | eval value=round(value,2) | table value",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_response_capacity": {
+      "options": {
+        "query": "index=bushfire_sentinel \"response_capacity_status\" | spath path=response_capacity_status output=response_capacity_status | stats latest(response_capacity_status) as value | eval value=upper(substr(value,1,1)).lower(substr(value,2)) | table value",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_risk_level": {
+      "options": {
+        "query": "index=bushfire_sentinel \"fire_risk_level\" | spath path=fire_risk_level output=fire_risk_level | stats latest(fire_risk_level) as value | eval value=upper(substr(value,1,1)).lower(substr(value,2)) | table value",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_risk_table": {
+      "options": {
+        "query": "index=bushfire_sentinel \"fire_risk_score\" | spath path=fire_risk_score output=fire_risk_score | spath path=fire_risk_level output=fire_risk_level | spath path=response_capacity_status output=response_capacity_status | spath path=overall_system_status output=overall_system_status | spath path=recommended_command output=recommended_command | spath path=risk_factors{} output=rf | eval Score=tonumber(fire_risk_score), Risk=fire_risk_level, Response=response_capacity_status, Status=overall_system_status, Command=coalesce(recommended_command,\"-\"), Factors=mvjoin(rf,\", \") | eval Command=if(Command=\"null\" OR isnull(Command), \"-\", Command) | sort - _time | dedup Score Risk Status Command Factors | eval Time=strftime(_time,\"%H:%M:%S\") | eval Risk=upper(substr(Risk,1,1)).lower(substr(Risk,2)) | eval Response=upper(substr(Response,1,1)).lower(substr(Response,2)) | eval Status=replace(Status, \"_\", \" \") | eval Status=upper(substr(Status,1,1)).lower(substr(Status,2)) | eval Command=replace(Command, \"_\", \" \") | eval Command=if(Command=\"-\", \"-\", upper(substr(Command,1,1)).lower(substr(Command,2))) | table Time Score Risk Status Command Factors | head 6",
+        "queryParameters": {
+          "earliest": "$time_risk.earliest$",
+          "latest": "$time_risk.latest$"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_risk_trend": {
+      "options": {
+        "query": "index=bushfire_sentinel \"fire_risk_score\" | spath path=fire_risk_score output=fire_risk_score | eval score=tonumber(fire_risk_score) | where isnotnull(score) | timechart span=30s avg(score) as \"Risk Score\"",
+        "queryParameters": {
+          "earliest": "$time_risk.earliest$",
+          "latest": "$time_risk.latest$"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_sensor_sparklines": {
+      "options": {
+        "query": "index=bushfire_sentinel \"sensor\" | spath path=device_id output=device_id | spath path=sensor output=sensor | spath path=value output=json_value | eval reading=tonumber(json_value) | where device_id=\"station_01\" AND isnotnull(reading) AND sensor IN (\"ambient_temperature\",\"relative_humidity\",\"wind_speed\",\"precipitation\",\"smoke_level\",\"soil_dryness\",\"water_tank_level\") | eval Sensor=case(sensor=\"ambient_temperature\",\"Temperature\",sensor=\"relative_humidity\",\"Humidity\",sensor=\"wind_speed\",\"Wind\",sensor=\"precipitation\",\"Rain\",sensor=\"smoke_level\",\"Smoke\",sensor=\"soil_dryness\",\"Soil Dryness\",sensor=\"water_tank_level\",\"Water Tank\",true(),sensor) | stats sparkline(avg(reading),2m) as \"Recent Trend\" latest(reading) as Latest avg(reading) as \"Average 60m\" by Sensor | eval Latest=round(Latest,2), \"Average 60m\"=round('Average 60m',2) | sort Sensor | table Sensor \"Recent Trend\" Latest \"Average 60m\"",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_sprinkler_feedback": {
+      "options": {
+        "query": "index=bushfire_sentinel (\"sprinkler_command\" OR \"sprinkler_status\" OR \"sensor\":\"sprinkler_status\") | spath path=sprinkler_command output=sprinkler_command | spath path=sprinkler_status output=sprinkler_status | spath path=sensor output=sensor | spath path=value output=value | eval raw_feedback=coalesce(sprinkler_status, if(sensor=\"sprinkler_status\", value, null())) | eventstats latest(sprinkler_command) as latest_command latest(raw_feedback) as latest_feedback | eval latest_command=coalesce(latest_command,\"NONE\"), latest_feedback=coalesce(latest_feedback,\"UNKNOWN\") | eval value=case(latest_command=\"EMERGENCY_ALERT\",\"Emergency Alert\", latest_feedback=\"FAILED\",\"Actuator Failed\", latest_feedback=\"NO_RESPONSE\",\"No Response\", latest_command=\"ACTIVATE_SPRINKLER\" AND latest_feedback=\"ON\",\"Sprinkler Active\", latest_command=\"ACTIVATE_SPRINKLER\",\"Waiting Feedback\", latest_command=\"SEND_WARNING\",\"Warning Sent\", latest_command=\"STANDBY\",\"Standby\", latest_command=\"NONE\",\"Standby\", true(),\"Standby\") | stats latest(value) as value | table value",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_system_status": {
+      "options": {
+        "query": "index=bushfire_sentinel \"overall_system_status\" | spath path=overall_system_status output=overall_system_status | stats latest(overall_system_status) as value | eval value=replace(value, \"_\", \" \") | eval value=upper(substr(value,1,1)).lower(substr(value,2)) | table value",
+        "queryParameters": {
+          "earliest": "-60m",
+          "latest": "now"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_weather_latest": {
+      "options": {
+        "query": "index=bushfire_sentinel \"open_meteo\" (\"ambient_temperature\" OR \"wind_speed\") | spath path=device_id output=json_device_id | spath path=site_name output=json_site_name | spath path=sensor output=json_sensor | spath path=value output=json_value | spath path=source output=json_source | where json_source=\"open_meteo\" AND json_sensor IN (\"ambient_temperature\",\"wind_speed\") | eval reading=tonumber(json_value) | where isnotnull(reading) AND ((json_sensor=\"ambient_temperature\" AND reading>=-10 AND reading<=55) OR (json_sensor=\"wind_speed\" AND reading>=0 AND reading<=150)) | eval Site=case(json_device_id=\"station_01\",\"Main Site\",json_device_id=\"station_ref_01\",\"Park Site\",json_device_id=\"station_ref_02\",\"Region Site\",true(),json_site_name) | eval Metric=case(json_sensor=\"ambient_temperature\",\"Temperature C\",json_sensor=\"wind_speed\",\"Wind km/h\",true(),json_sensor) | stats latest(reading) as latest by Site Metric | eval latest=round(latest,2) | xyseries Site Metric latest",
+        "queryParameters": {
+          "earliest": "$time_weather.earliest$",
+          "latest": "$time_weather.latest$"
+        }
+      },
+      "type": "ds.search"
+    },
+    "ds_weather_risk_drivers": {
+      "options": {
+        "query": "index=bushfire_sentinel \"open_meteo\" (\"ambient_temperature\" OR \"wind_speed\") | spath path=timestamp output=json_timestamp | spath path=device_id output=json_device_id | spath path=sensor output=json_sensor | spath path=value output=json_value | spath path=source output=json_source | eval clean_time=replace(json_timestamp,\"Z\",\"+0000\") | eval event_time=coalesce(strptime(clean_time,\"%Y-%m-%dT%H:%M:%S.%3N%z\"),strptime(clean_time,\"%Y-%m-%dT%H:%M:%S%z\")) | eval _time=coalesce(event_time,_time) | eval reading=tonumber(json_value) | where json_source=\"open_meteo\" AND json_device_id=\"station_01\" AND json_sensor IN (\"ambient_temperature\",\"wind_speed\") AND isnotnull(reading) | where (json_sensor=\"ambient_temperature\" AND reading>=-10 AND reading<=55) OR (json_sensor=\"wind_speed\" AND reading>=0 AND reading<=150) | eval metric=case(json_sensor=\"ambient_temperature\",\"Temperature C\",json_sensor=\"wind_speed\",\"Wind km/h\",true(),json_sensor) | timechart span=1m avg(reading) by metric",
+        "queryParameters": {
+          "earliest": "$time_weather.earliest$",
+          "latest": "$time_weather.latest$"
+        }
+      },
+      "type": "ds.search"
+    }
+  },
+  "layout": {
+    "layoutDefinitions": {
+      "layout_control_evidence": {
+        "options": {
+          "backgroundColor": "#e8f1ec",
+          "display": "fit-to-width",
+          "height": 988,
+          "width": 1440
+        },
+        "structure": [
+          {
+            "item": "header",
+            "position": {
+              "h": 78,
+              "w": 1420,
+              "x": 10,
+              "y": 10
+            },
+            "type": "block"
+          },
+          {
+            "item": "section_control",
+            "position": {
+              "h": 34,
+              "w": 1420,
+              "x": 10,
+              "y": 88
+            },
+            "type": "block"
+          },
+          {
+            "item": "control_table",
+            "position": {
+              "h": 150,
+              "w": 320,
+              "x": 10,
+              "y": 132
+            },
+            "type": "block"
+          },
+          {
+            "item": "actuator_table",
+            "position": {
+              "h": 150,
+              "w": 320,
+              "x": 340,
+              "y": 132
+            },
+            "type": "block"
+          },
+          {
+            "item": "actuator_failures_60m",
+            "position": {
+              "h": 150,
+              "w": 310,
+              "x": 670,
+              "y": 132
+            },
+            "type": "block"
+          },
+          {
+            "item": "alert_activity_sparklines",
+            "position": {
+              "h": 448,
+              "w": 440,
+              "x": 990,
+              "y": 132
+            },
+            "type": "block"
+          },
+          {
+            "item": "control_loop",
+            "position": {
+              "h": 288,
+              "w": 970,
+              "x": 10,
+              "y": 292
+            },
+            "type": "block"
+          },
+          {
+            "item": "section_evidence",
+            "position": {
+              "h": 34,
+              "w": 1420,
+              "x": 10,
+              "y": 590
+            },
+            "type": "block"
+          },
+          {
+            "item": "risk_table",
+            "position": {
+              "h": 344,
+              "w": 800,
+              "x": 10,
+              "y": 634
+            },
+            "type": "block"
+          },
+          {
+            "item": "alert_table",
+            "position": {
+              "h": 344,
+              "w": 605,
+              "x": 825,
+              "y": 634
+            },
+            "type": "block"
+          }
+        ],
+        "type": "absolute"
+      },
+      "layout_operations": {
+        "options": {
+          "backgroundColor": "#e8f1ec",
+          "display": "fit-to-width",
+          "height": 1380,
+          "width": 1440
+        },
+        "structure": [
+          {
+            "item": "header",
+            "position": {
+              "h": 78,
+              "w": 1420,
+              "x": 10,
+              "y": 10
+            },
+            "type": "block"
+          },
+          {
+            "item": "section_summary",
+            "position": {
+              "h": 34,
+              "w": 1420,
+              "x": 10,
+              "y": 88
+            },
+            "type": "block"
+          },
+          {
+            "item": "fire_score",
+            "position": {
+              "h": 290,
+              "w": 280,
+              "x": 10,
+              "y": 132
+            },
+            "type": "block"
+          },
+          {
+            "item": "risk_level",
+            "position": {
+              "h": 150,
+              "w": 370,
+              "x": 300,
+              "y": 132
+            },
+            "type": "block"
+          },
+          {
+            "item": "system_status",
+            "position": {
+              "h": 150,
+              "w": 370,
+              "x": 680,
+              "y": 132
+            },
+            "type": "block"
+          },
+          {
+            "item": "response_capacity",
+            "position": {
+              "h": 150,
+              "w": 370,
+              "x": 1060,
+              "y": 132
+            },
+            "type": "block"
+          },
+          {
+            "item": "sprinkler_feedback",
+            "position": {
+              "h": 210,
+              "w": 280,
+              "x": 10,
+              "y": 432
+            },
+            "type": "block"
+          },
+          {
+            "item": "risk_trend",
+            "position": {
+              "h": 350,
+              "w": 1130,
+              "x": 300,
+              "y": 292
+            },
+            "type": "block"
+          },
+          {
+            "item": "input_time_risk",
+            "position": {
+              "h": 70,
+              "w": 165,
+              "x": 1270,
+              "y": 263
+            },
+            "type": "input"
+          },
+          {
+            "item": "section_environment",
+            "position": {
+              "h": 34,
+              "w": 1420,
+              "x": 10,
+              "y": 652
+            },
+            "type": "block"
+          },
+          {
+            "item": "weather_risk_drivers",
+            "position": {
+              "h": 300,
+              "w": 770,
+              "x": 10,
+              "y": 696
+            },
+            "type": "block"
+          },
+          {
+            "item": "weather_latest",
+            "position": {
+              "h": 300,
+              "w": 380,
+              "x": 790,
+              "y": 696
+            },
+            "type": "block"
+          },
+          {
+            "item": "min_humidity_1h",
+            "position": {
+              "h": 145,
+              "w": 250,
+              "x": 1180,
+              "y": 696
+            },
+            "type": "block"
+          },
+          {
+            "item": "rain_last_1h",
+            "position": {
+              "h": 145,
+              "w": 250,
+              "x": 1180,
+              "y": 851
+            },
+            "type": "block"
+          },
+          {
+            "item": "input_time_weather",
+            "position": {
+              "h": 70,
+              "w": 165,
+              "x": 620,
+              "y": 668
+            },
+            "type": "input"
+          },
+          {
+            "item": "section_local",
+            "position": {
+              "h": 34,
+              "w": 1420,
+              "x": 10,
+              "y": 1006
+            },
+            "type": "block"
+          },
+          {
+            "item": "local_trends",
+            "position": {
+              "h": 320,
+              "w": 910,
+              "x": 520,
+              "y": 1050
+            },
+            "type": "block"
+          },
+          {
+            "item": "sensor_sparklines",
+            "position": {
+              "h": 320,
+              "w": 500,
+              "x": 10,
+              "y": 1050
+            },
+            "type": "block"
+          },
+          {
+            "item": "input_time_local",
+            "position": {
+              "h": 70,
+              "w": 165,
+              "x": 1270,
+              "y": 1022
+            },
+            "type": "input"
+          }
+        ],
+        "type": "absolute"
+      }
+    },
+    "tabs": {
+      "items": [
+        {
+          "label": "Operations",
+          "layoutId": "layout_operations"
+        },
+        {
+          "label": "Control & Evidence",
+          "layoutId": "layout_control_evidence"
+        }
+      ]
+    }
+  }
+}

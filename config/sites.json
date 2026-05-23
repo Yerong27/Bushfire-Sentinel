@@ -1,0 +1,23 @@
+[
+  {
+    "device_id": "station_01",
+    "name": "Main Site",
+    "role": "primary_operational_site",
+    "latitude": -37.755278,
+    "longitude": 145.99582
+  },
+  {
+    "device_id": "station_ref_01",
+    "name": "Park Site",
+    "role": "environmental_reference",
+    "latitude": -37.83,
+    "longitude": 146.000806
+  },
+  {
+    "device_id": "station_ref_02",
+    "name": "Region Site",
+    "role": "environmental_reference",
+    "latitude": -37.680556,
+    "longitude": 145.990833
+  }
+]

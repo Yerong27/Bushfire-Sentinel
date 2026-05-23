@@ -1,0 +1,74 @@
+{
+  "normal": {
+    "description": "Stable low-risk local site readings.",
+    "smoke_level": [5, 25],
+    "soil_dryness": [35, 45],
+    "water_tank_level": [75, 95]
+  },
+  "rising_weather_risk": {
+    "description": "Slow dry-soil build-up while live weather provides external context.",
+    "smoke_level": [20, 75],
+    "soil_dryness": [65, 85],
+    "water_tank_level": [60, 85]
+  },
+  "smoke_spike": {
+    "description": "Sudden smoke increase to exercise anomaly detection and risk escalation.",
+    "smoke_level": [160, 320],
+    "soil_dryness": [55, 75],
+    "water_tank_level": [60, 85]
+  },
+  "high_fire_demo": {
+    "description": "Manual demo scenario for sustained high smoke and dry soil leading to HIGH risk.",
+    "smoke_level": [180, 240],
+    "soil_dryness": [70, 85],
+    "water_tank_level": [60, 85]
+  },
+  "critical_fire_demo": {
+    "description": "Manual demo scenario for sustained critical smoke and very dry soil leading to CRITICAL risk.",
+    "smoke_level": [280, 360],
+    "soil_dryness": [85, 95],
+    "water_tank_level": [55, 80]
+  },
+  "water_tank_drop": {
+    "description": "Water reserve falls while fire risk may remain separate.",
+    "smoke_level": [10, 40],
+    "soil_dryness": [35, 55],
+    "water_tank_level": [8, 28]
+  },
+  "sprinkler_failure": {
+    "description": "Used by actuator_simulator to return FAILED after ACTIVATE_SPRINKLER.",
+    "smoke_level": [120, 260],
+    "soil_dryness": [65, 85],
+    "water_tank_level": [45, 70]
+  },
+  "missing_value": {
+    "description": "Drops value from one message to demonstrate validation failure.",
+    "smoke_level": [10, 35],
+    "soil_dryness": [35, 50],
+    "water_tank_level": [65, 90]
+  },
+  "unrealistic_value": {
+    "description": "Publishes impossible values to demonstrate validation filtering.",
+    "smoke_level": [1200, 1400],
+    "soil_dryness": [110, 130],
+    "water_tank_level": [-20, -5]
+  },
+  "frozen_sensor": {
+    "description": "Repeats identical readings to demonstrate frozen-value anomaly detection.",
+    "smoke_level": [42, 42],
+    "soil_dryness": [70, 70],
+    "water_tank_level": [68, 68]
+  },
+  "sensor_dropout": {
+    "description": "Stops publishing smoke_level after startup to demonstrate missing stream detection.",
+    "smoke_level": [25, 45],
+    "soil_dryness": [35, 55],
+    "water_tank_level": [65, 90]
+  },
+  "no_response": {
+    "description": "Used by actuator_simulator to withhold or return NO_RESPONSE after a command.",
+    "smoke_level": [120, 260],
+    "soil_dryness": [65, 85],
+    "water_tank_level": [55, 80]
+  }
+}

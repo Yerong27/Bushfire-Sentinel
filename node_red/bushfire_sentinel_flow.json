@@ -1,0 +1,520 @@
+[
+  {
+    "id": "tab_bushfire_sentinel",
+    "type": "tab",
+    "label": "Bushfire Sentinel CPS",
+    "disabled": false,
+    "info": "Node-RED is the CPS orchestration layer. Splunk is the primary dashboard and analytics interface."
+  },
+  {
+    "id": "mqtt_public_broker",
+    "type": "mqtt-broker",
+    "name": "Public MQTT Broker",
+    "broker": "broker.hivemq.com",
+    "port": "1883",
+    "clientid": "node_red_bushfire_sentinel",
+    "autoConnect": true,
+    "usetls": false,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": "",
+    "willMsg": {},
+    "sessionExpiry": ""
+  },
+  {
+    "id": "mqtt_aws_placeholder",
+    "type": "mqtt-broker",
+    "name": "AWS IoT Core config placeholder",
+    "broker": "YOUR_AWS_IOT_ENDPOINT.iot.ap-southeast-2.amazonaws.com",
+    "port": "8883",
+    "clientid": "node_red_bushfire_sentinel_aws",
+    "autoConnect": false,
+    "usetls": true,
+    "protocolVersion": "4",
+    "keepalive": "60",
+    "cleansession": true,
+    "birthTopic": "",
+    "birthQos": "0",
+    "birthPayload": "",
+    "birthMsg": {},
+    "closeTopic": "",
+    "closeQos": "0",
+    "closePayload": "",
+    "closeMsg": {},
+    "willTopic": "",
+    "willQos": "0",
+    "willPayload": "",
+    "willMsg": {},
+    "sessionExpiry": ""
+  },
+  {
+    "id": "mqtt_in_sensor_data",
+    "type": "mqtt in",
+    "z": "tab_bushfire_sentinel",
+    "name": "MQTT in cps/sensor/data",
+    "topic": "cps/sensor/data",
+    "qos": "0",
+    "datatype": "utf8",
+    "broker": "mqtt_public_broker",
+    "nl": false,
+    "rap": true,
+    "rh": 0,
+    "inputs": 0,
+    "x": 160,
+    "y": 100,
+    "wires": [
+      [
+        "json_sensor_data"
+      ]
+    ]
+  },
+  {
+    "id": "json_sensor_data",
+    "type": "json",
+    "z": "tab_bushfire_sentinel",
+    "name": "Parse JSON",
+    "property": "payload",
+    "action": "obj",
+    "pretty": false,
+    "x": 390,
+    "y": 100,
+    "wires": [
+      [
+        "fn_validation"
+      ]
+    ]
+  },
+  {
+    "id": "fn_validation",
+    "type": "function",
+    "z": "tab_bushfire_sentinel",
+    "name": "Validation and range filtering",
+    "func": "const ranges = {\n  ambient_temperature: { min: -10, max: 55 },\n  relative_humidity: { min: 0, max: 100 },\n  wind_speed: { min: 0, max: 150 },\n  precipitation: { min: 0, max: 300 },\n  smoke_level: { min: 0, max: 1000 },\n  soil_dryness: { min: 0, max: 100 },\n  water_tank_level: { min: 0, max: 100 }\n};\n\nconst allowedSprinkler = [\"ON\", \"OFF\", \"FAILED\", \"NO_RESPONSE\"];\nconst expectedProjectId = \"bushfire_sentinel\";\nconst p = msg.payload || {};\nconst errors = [];\n\nfor (const field of [\"project_id\", \"device_id\", \"sensor\", \"timestamp\", \"source\"]) {\n  if (p[field] === undefined || p[field] === null || p[field] === \"\") {\n    errors.push(`missing_${field}`);\n  }\n}\n\nif (p.project_id !== undefined && p.project_id !== expectedProjectId) {\n  errors.push(\"invalid_project_id\");\n}\n\nif (p.value === undefined || p.value === null || p.value === \"\") {\n  errors.push(\"missing_value\");\n}\n\nif (p.sensor === \"sprinkler_status\") {\n  if (!allowedSprinkler.includes(String(p.value))) {\n    errors.push(\"invalid_sprinkler_feedback\");\n  }\n  if (p.source !== \"actuator_simulator\") {\n    errors.push(\"sprinkler_status_must_be_actuator_feedback\");\n  }\n} else if (ranges[p.sensor]) {\n  const value = Number(p.value);\n  if (!Number.isFinite(value)) {\n    errors.push(\"non_numeric_value\");\n  } else if (value < ranges[p.sensor].min || value > ranges[p.sensor].max) {\n    errors.push(\"unrealistic_value\");\n  } else {\n    p.value = value;\n  }\n} else if (p.sensor !== undefined) {\n  errors.push(\"unknown_sensor\");\n}\n\nif (errors.length > 0) {\n  msg.payload = {\n    timestamp: new Date().toISOString(),\n    event_type: \"validation_reject\",\n    severity: \"WARN\",\n    errors,\n    original: p\n  };\n  return [null, msg];\n}\n\np.validation_status = \"valid\";\nmsg.payload = p;\nreturn [msg, null];\n",
+    "outputs": 2,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 660,
+    "y": 100,
+    "wires": [
+      [
+        "fn_jsonl_sensor",
+        "fn_smoothing",
+        "mqtt_aws_sensor",
+        "debug_valid_sensor"
+      ],
+      [
+        "fn_jsonl_alert"
+      ]
+    ]
+  },
+  {
+    "id": "fn_smoothing",
+    "type": "function",
+    "z": "tab_bushfire_sentinel",
+    "name": "Moving average cleaning",
+    "func": "const smoothingSensors=[\"ambient_temperature\",\"relative_humidity\",\"wind_speed\",\"smoke_level\"];\nconst p=msg.payload;\nif(!smoothingSensors.includes(p.sensor))return msg;\nconst key=`${p.device_id}:${p.sensor}`;\nconst window=context.get(key)||[];\nwindow.push(Number(p.value));\nwhile(window.length>5)window.shift();\ncontext.set(key,window);\np.cleaned_value=Number((window.reduce((sum,item)=>sum+item,0)/window.length).toFixed(2));\np.smoothing_method=\"moving_average_5\";\np.smoothing_window_size=window.length;\nmsg.payload=p;\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 940,
+    "y": 80,
+    "wires": [
+      [
+        "fn_anomaly"
+      ]
+    ]
+  },
+  {
+    "id": "fn_anomaly",
+    "type": "function",
+    "z": "tab_bushfire_sentinel",
+    "name": "Separate anomaly detection",
+    "func": "const p = msg.payload;\nconst now = Date.now();\nconst key = `${p.device_id}:${p.sensor}`;\nconst previous = context.get(`${key}:previous`);\nconst frozen = context.get(`${key}:frozen`) || { value: null, count: 0 };\nconst lastSeen = context.get(\"last_seen\") || {};\nconst anomalies = [];\n\nlastSeen[key] = now;\ncontext.set(\"last_seen\", lastSeen);\n\nconst numericValue = Number(p.cleaned_value !== undefined ? p.cleaned_value : p.value);\nif (Number.isFinite(numericValue) && previous !== undefined) {\n  const delta = Math.abs(numericValue - Number(previous));\n  if (p.sensor === \"smoke_level\" && delta >= 80) {\n    anomalies.push({ type: \"sudden_spike\", sensor: p.sensor, severity: \"HIGH\", delta });\n  }\n  if (p.sensor === \"wind_speed\" && delta >= 35) {\n    anomalies.push({ type: \"extreme_jump\", sensor: p.sensor, severity: \"MEDIUM\", delta });\n  }\n}\n\nconst frozenEligible = p.source !== \"open_meteo\" && p.sensor !== \"sprinkler_status\";\nif (frozenEligible) {\n  if (p.value === frozen.value) {\n    frozen.count += 1;\n  } else {\n    frozen.value = p.value;\n    frozen.count = 1;\n  }\n  context.set(`${key}:frozen`, frozen);\n\n  if (frozen.count >= 5) {\n    anomalies.push({ type: \"frozen_value\", sensor: p.sensor, severity: \"MEDIUM\", repeat_count: frozen.count });\n  }\n}\n\nif (Number.isFinite(numericValue)) {\n  context.set(`${key}:previous`, numericValue);\n}\n\nconst expected = [\n  \"station_01:ambient_temperature\",\n  \"station_01:relative_humidity\",\n  \"station_01:wind_speed\",\n  \"station_01:precipitation\",\n  \"station_01:smoke_level\",\n  \"station_01:soil_dryness\",\n  \"station_01:water_tank_level\"\n];\n\nfor (const expectedKey of expected) {\n  if (lastSeen[expectedKey] && now - lastSeen[expectedKey] > 90000) {\n    anomalies.push({ type: \"missing_stream\", sensor: expectedKey.split(\":\")[1], severity: \"HIGH\", age_ms: now - lastSeen[expectedKey] });\n  }\n}\n\nif (anomalies.length === 0) {\n  return [msg, null];\n}\n\nconst alert = {\n  timestamp: new Date().toISOString(),\n  device_id: p.device_id,\n  event_type: \"anomaly\",\n  severity: anomalies.some(a => a.severity === \"HIGH\") ? \"HIGH\" : \"MEDIUM\",\n  anomalies,\n  source_message: p\n};\n\ncontext.set(\"latest_anomaly\", alert);\nreturn [msg, { payload: alert }];\n",
+    "outputs": 2,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1200,
+    "y": 80,
+    "wires": [
+      [
+        "fn_risk_engine",
+        "fn_actuator_feedback_event"
+      ],
+      [
+        "fn_jsonl_alert"
+      ]
+    ]
+  },
+  {
+    "id": "fn_actuator_feedback_event",
+    "type": "function",
+    "z": "tab_bushfire_sentinel",
+    "name": "Actuator feedback event",
+    "func": "const p=msg.payload;\nif(p.sensor!==\"sprinkler_status\")return null;\nmsg.payload={timestamp:new Date().toISOString(),event_type:\"actuator_feedback\",device_id:p.device_id,command_id:p.command_id,last_command:p.last_command,sprinkler_status:p.value,response_time_ms:p.response_time_ms,scenario:p.scenario,source:p.source};\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1490,
+    "y": 160,
+    "wires": [
+      [
+        "fn_jsonl_actuator"
+      ]
+    ]
+  },
+  {
+    "id": "fn_risk_engine",
+    "type": "function",
+    "z": "tab_bushfire_sentinel",
+    "name": "Rule-based fire risk and control",
+    "func": "const p = msg.payload;\nconst state = context.get(\"latest_state\") || {};\nconst key = `${p.device_id}:${p.sensor}`;\nstate[key] = p;\ncontext.set(\"latest_state\", state);\n\nif (p.device_id !== \"station_01\" && ![\"ambient_temperature\", \"relative_humidity\", \"wind_speed\", \"precipitation\"].includes(p.sensor)) {\n  return null;\n}\n\nfunction value(deviceId, sensor) {\n  const item = state[`${deviceId}:${sensor}`];\n  if (!item) return null;\n  const raw = item.cleaned_value !== undefined ? item.cleaned_value : item.value;\n  const n = Number(raw);\n  return Number.isFinite(n) ? n : null;\n}\n\nfunction rawValue(deviceId, sensor) {\n  const item = state[`${deviceId}:${sensor}`];\n  if (!item) return null;\n  const n = Number(item.value);\n  return Number.isFinite(n) ? n : null;\n}\n\nfunction regionalWeather(sensor, reducer) {\n  const values = [\"station_01\", \"station_ref_01\", \"station_ref_02\"]\n    .map(id => value(id, sensor))\n    .filter(v => v !== null);\n  if (values.length === 0) return null;\n  return reducer(values);\n}\n\nconst temp = regionalWeather(\"ambient_temperature\", values => Math.max(...values));\nconst humidity = regionalWeather(\"relative_humidity\", values => Math.min(...values));\nconst wind = regionalWeather(\"wind_speed\", values => Math.max(...values));\nconst rain = regionalWeather(\"precipitation\", values => Math.min(...values));\nconst nowMs = Date.now();\nconst smoke = value(\"station_01\", \"smoke_level\");\nconst smokeRaw = rawValue(\"station_01\", \"smoke_level\");\nconst soil = value(\"station_01\", \"soil_dryness\");\nconst tank = value(\"station_01\", \"water_tank_level\");\nconst sprinkler = state[\"station_01:sprinkler_status\"] ? state[\"station_01:sprinkler_status\"].value : null;\n\nlet smokeSignal = context.get(\"smoke_signal\") || {\n  elevated_count: 0,\n  high_count: 0,\n  critical_count: 0,\n  latest_raw: null,\n  latest_cleaned: null,\n  timestamp_ms: 0\n};\n\nif (p.device_id === \"station_01\" && p.sensor === \"smoke_level\" && smokeRaw !== null) {\n  smokeSignal = {\n    elevated_count: smokeRaw >= 60 ? smokeSignal.elevated_count + 1 : 0,\n    high_count: smokeRaw >= 150 ? smokeSignal.high_count + 1 : 0,\n    critical_count: smokeRaw >= 250 ? smokeSignal.critical_count + 1 : 0,\n    latest_raw: smokeRaw,\n    latest_cleaned: smoke,\n    timestamp_ms: nowMs\n  };\n  context.set(\"smoke_signal\", smokeSignal);\n}\n\nconst smokeSignalFresh = nowMs - (smokeSignal.timestamp_ms || 0) <= 90 * 1000;\nconst sustainedCriticalSmoke = smokeSignalFresh && smokeSignal.critical_count >= 2;\nconst sustainedHighSmoke = smokeSignalFresh && smokeSignal.high_count >= 2;\nconst sustainedElevatedSmoke = smokeSignalFresh && smokeSignal.elevated_count >= 3;\n\nlet score = 0;\nconst factors = [];\n\nfunction add(condition, points, factor) {\n  if (condition) {\n    score += points;\n    factors.push(factor);\n  }\n}\n\nadd(temp !== null && temp >= 35, 20, \"high_temperature\");\nadd(temp !== null && temp >= 30 && temp < 35, 10, \"warm_temperature\");\nadd(humidity !== null && humidity <= 20, 20, \"very_low_humidity\");\nadd(humidity !== null && humidity <= 35 && humidity > 20, 10, \"low_humidity\");\nadd(wind !== null && wind >= 45, 20, \"high_wind\");\nadd(wind !== null && wind >= 30 && wind < 45, 10, \"elevated_wind\");\nadd(rain !== null && rain <= 0.2, 10, \"no_recent_precipitation\");\nadd(rain !== null && rain > 0.2 && rain <= 1.0, 5, \"low_precipitation\");\nadd(sustainedCriticalSmoke, 40, \"critical_smoke\");\nadd(!sustainedCriticalSmoke && sustainedHighSmoke, 30, \"high_smoke\");\nadd(!sustainedCriticalSmoke && !sustainedHighSmoke && sustainedElevatedSmoke, 15, \"elevated_smoke\");\nadd(soil !== null && soil >= 85, 25, \"very_dry_soil\");\nadd(soil !== null && soil >= 65 && soil < 85, 15, \"dry_soil\");\nadd(soil !== null && soil >= 50 && soil < 65, 5, \"drying_soil\");\n\nscore = Math.min(score, 100);\n\nlet fireLevel = \"LOW\";\nif (score >= 75) fireLevel = \"CRITICAL\";\nelse if (score >= 50) fireLevel = \"HIGH\";\nelse if (score >= 25) fireLevel = \"MODERATE\";\n\nlet responseCapacity = \"NORMAL\";\nif ((sprinkler === \"FAILED\" || sprinkler === \"NO_RESPONSE\") && (fireLevel === \"HIGH\" || fireLevel === \"CRITICAL\")) {\n  responseCapacity = \"FAILED\";\n} else if (tank !== null && tank <= 5 && (fireLevel === \"HIGH\" || fireLevel === \"CRITICAL\")) {\n  responseCapacity = \"FAILED\";\n} else if (tank !== null && tank < 30) {\n  responseCapacity = \"WEAK\";\n} else if (tank !== null && tank < 60) {\n  responseCapacity = \"LIMITED\";\n}\n\nlet overall = \"NORMAL\";\nif (responseCapacity === \"FAILED\" && (fireLevel === \"HIGH\" || fireLevel === \"CRITICAL\")) overall = \"RESPONSE FAILURE ALERT\";\nelse if (fireLevel === \"CRITICAL\") overall = \"CRITICAL THREAT\";\nelse if (fireLevel === \"HIGH\") overall = \"HIGH RISK\";\nelse if (fireLevel === \"MODERATE\") overall = \"ELEVATED RISK\";\n\nlet lowRiskStart = context.get(\"low_risk_start_time\");\nif (fireLevel === \"LOW\") {\n  if (!lowRiskStart) {\n    lowRiskStart = nowMs;\n    context.set(\"low_risk_start_time\", lowRiskStart);\n  }\n} else {\n  context.set(\"low_risk_start_time\", null);\n  lowRiskStart = null;\n}\n\nlet candidateCommand = null;\nif (overall === \"RESPONSE FAILURE ALERT\" || fireLevel === \"CRITICAL\") candidateCommand = \"EMERGENCY_ALERT\";\nelse if (fireLevel === \"HIGH\" && responseCapacity !== \"FAILED\") candidateCommand = \"ACTIVATE_SPRINKLER\";\nelse if (\n  fireLevel === \"MODERATE\"\n  && (\n    score >= 35\n    || factors.includes(\"high_smoke\")\n    || factors.includes(\"critical_smoke\")\n    || factors.includes(\"dry_soil\")\n    || factors.includes(\"very_dry_soil\")\n  )\n) candidateCommand = \"SEND_WARNING\";\nelse if (fireLevel === \"LOW\" && lowRiskStart && (nowMs - lowRiskStart >= 10 * 60 * 1000)) candidateCommand = \"STANDBY\";\n\nconst commandCooldownMs = {\n  STANDBY: Infinity,\n  SEND_WARNING: 10 * 60 * 1000,\n  ACTIVATE_SPRINKLER: 2 * 60 * 1000,\n  EMERGENCY_ALERT: 60 * 1000\n};\nconst commandPriority = {\n  STANDBY: 0,\n  SEND_WARNING: 1,\n  ACTIVATE_SPRINKLER: 2,\n  EMERGENCY_ALERT: 3\n};\nconst lastControl = context.get(\"last_control\") || {};\nconst lastCommandTimes = context.get(\"last_command_times\") || {};\nconst currentDecision = `${fireLevel}|${overall}|${candidateCommand || \"NONE\"}`;\nconst previousDecision = lastControl.decision || null;\nconst previousCommand = lastControl.command || null;\nconst cooldownMs = candidateCommand ? commandCooldownMs[candidateCommand] : Infinity;\nconst previousPriority = commandPriority[lastControl.command] || 0;\nconst currentPriority = candidateCommand ? commandPriority[candidateCommand] : 0;\nconst escalated = Boolean(previousCommand) && currentPriority > previousPriority;\nconst lastIssuedAt = candidateCommand ? lastCommandTimes[candidateCommand] || 0 : 0;\nconst commandNeverIssued = lastIssuedAt === 0;\nconst commandCooldownExpired = commandNeverIssued || nowMs - lastIssuedAt >= cooldownMs;\nconst standbyChanged = candidateCommand === \"STANDBY\" && previousCommand !== \"STANDBY\";\nconst commandAllowedByPolicy = candidateCommand === \"STANDBY\"\n  ? standbyChanged\n  : escalated || commandCooldownExpired;\n\nlet command = null;\nif (candidateCommand && commandAllowedByPolicy) {\n  command = candidateCommand;\n  lastCommandTimes[command] = nowMs;\n  context.set(\"last_command_times\", lastCommandTimes);\n  context.set(\"last_control\", {\n    command,\n    decision: currentDecision,\n    timestamp_ms: nowMs\n  });\n} else if (!candidateCommand && (previousCommand !== null || previousDecision !== currentDecision)) {\n  context.set(\"last_control\", {\n    command: null,\n    decision: currentDecision,\n    timestamp_ms: nowMs\n  });\n}\n\nconst commandId = command ? `cmd-${nowMs}` : null;\nconst risk = {\n  project_id: \"bushfire_sentinel\",\n  timestamp: new Date().toISOString(),\n  device_id: \"station_01\",\n  fire_risk_score: score,\n  fire_risk_level: fireLevel,\n  response_capacity_status: responseCapacity,\n  overall_system_status: overall,\n  risk_factors: factors,\n  weather_context: {\n    max_temperature: temp,\n    min_humidity: humidity,\n    max_wind_speed: wind,\n    min_precipitation: rain\n  },\n  local_context: {\n    smoke_level: smoke,\n    smoke_raw: smokeRaw,\n    smoke_sustained_count: smokeSignal.elevated_count,\n    soil_dryness: soil,\n    water_tank_level: tank,\n    sprinkler_status: sprinkler\n  },\n  candidate_command: candidateCommand,\n  recommended_command: command,\n  command_id: commandId\n};\n\nconst alert = (fireLevel === \"HIGH\" || fireLevel === \"CRITICAL\" || responseCapacity === \"FAILED\")\n  ? {\n    project_id: \"bushfire_sentinel\",\n    timestamp: risk.timestamp,\n    device_id: \"station_01\",\n    alert_type: responseCapacity === \"FAILED\" ? \"RESPONSE_CAPACITY\" : \"FIRE_RISK\",\n    severity: fireLevel === \"CRITICAL\" || responseCapacity === \"FAILED\" ? \"CRITICAL\" : \"HIGH\",\n    message: `${overall}: fire risk ${fireLevel}, response capacity ${responseCapacity}`,\n    command\n  }\n  : null;\n\nconst control = command\n  ? {\n    project_id: \"bushfire_sentinel\",\n    timestamp: risk.timestamp,\n    device_id: \"station_01\",\n    command_id: commandId,\n    sprinkler_command: command,\n    reason: `${fireLevel} fire risk with response capacity ${responseCapacity}`\n  }\n  : null;\n\nreturn [\n  { payload: risk },\n  alert ? { payload: alert } : null,\n  control ? { payload: control } : null\n];\n",
+    "outputs": 3,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1500,
+    "y": 60,
+    "wires": [
+      [
+        "fn_jsonl_risk",
+        "mqtt_aws_risk",
+        "debug_risk"
+      ],
+      [
+        "fn_jsonl_alert"
+      ],
+      [
+        "fn_jsonl_control",
+        "mqtt_out_control",
+        "debug_control"
+      ]
+    ]
+  },
+  {
+    "id": "mqtt_out_control",
+    "type": "mqtt out",
+    "z": "tab_bushfire_sentinel",
+    "name": "MQTT out cps/control",
+    "topic": "cps/control",
+    "qos": "0",
+    "retain": "",
+    "respTopic": "",
+    "contentType": "",
+    "userProps": "",
+    "correl": "",
+    "expiry": "",
+    "broker": "mqtt_public_broker",
+    "x": 1780,
+    "y": 160,
+    "wires": []
+  },
+  {
+    "id": "mqtt_aws_sensor",
+    "type": "mqtt out",
+    "z": "tab_bushfire_sentinel",
+    "name": "AWS IoT sensor publish (configure before demo)",
+    "topic": "cps/sensor/data",
+    "qos": "0",
+    "retain": "",
+    "broker": "mqtt_aws_placeholder",
+    "x": 970,
+    "y": 160,
+    "wires": [],
+    "d": true
+  },
+  {
+    "id": "mqtt_aws_risk",
+    "type": "mqtt out",
+    "z": "tab_bushfire_sentinel",
+    "name": "AWS IoT risk publish (configure before demo)",
+    "topic": "cps/analysis/risk",
+    "qos": "0",
+    "retain": "",
+    "broker": "mqtt_aws_placeholder",
+    "x": 1810,
+    "y": 220,
+    "wires": [],
+    "d": true
+  },
+  {
+    "id": "fn_jsonl_sensor",
+    "type": "function",
+    "z": "tab_bushfire_sentinel",
+    "name": "JSONL sensor log",
+    "func": "msg.payload=JSON.stringify(msg.payload);return msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 930,
+    "y": 220,
+    "wires": [
+      [
+        "file_sensor_log"
+      ]
+    ]
+  },
+  {
+    "id": "fn_jsonl_risk",
+    "type": "function",
+    "z": "tab_bushfire_sentinel",
+    "name": "JSONL risk log",
+    "func": "msg.payload=JSON.stringify(msg.payload);return msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1770,
+    "y": 280,
+    "wires": [
+      [
+        "file_risk_log"
+      ]
+    ]
+  },
+  {
+    "id": "fn_jsonl_alert",
+    "type": "function",
+    "z": "tab_bushfire_sentinel",
+    "name": "JSONL alert log",
+    "func": "msg.payload=JSON.stringify(msg.payload);return msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1770,
+    "y": 340,
+    "wires": [
+      [
+        "file_alert_log"
+      ]
+    ]
+  },
+  {
+    "id": "fn_jsonl_control",
+    "type": "function",
+    "z": "tab_bushfire_sentinel",
+    "name": "JSONL control log",
+    "func": "msg.payload=JSON.stringify(msg.payload);return msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1780,
+    "y": 400,
+    "wires": [
+      [
+        "file_control_log"
+      ]
+    ]
+  },
+  {
+    "id": "fn_jsonl_actuator",
+    "type": "function",
+    "z": "tab_bushfire_sentinel",
+    "name": "JSONL actuator log",
+    "func": "msg.payload=JSON.stringify(msg.payload);return msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1770,
+    "y": 460,
+    "wires": [
+      [
+        "file_actuator_log"
+      ]
+    ]
+  },
+  {
+    "id": "file_sensor_log",
+    "type": "file",
+    "z": "tab_bushfire_sentinel",
+    "name": "Splunk sensor_data.jsonl",
+    "filename": "${BUSHFIRE_SENTINEL_LOG_DIR}/sensor_data.jsonl",
+    "filenameType": "str",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "encoding": "none",
+    "x": 950,
+    "y": 220,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "file_risk_log",
+    "type": "file",
+    "z": "tab_bushfire_sentinel",
+    "name": "Splunk risk_analysis.jsonl",
+    "filename": "${BUSHFIRE_SENTINEL_LOG_DIR}/risk_analysis.jsonl",
+    "filenameType": "str",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "encoding": "none",
+    "x": 1810,
+    "y": 280,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "file_alert_log",
+    "type": "file",
+    "z": "tab_bushfire_sentinel",
+    "name": "Splunk alerts.jsonl",
+    "filename": "${BUSHFIRE_SENTINEL_LOG_DIR}/alerts.jsonl",
+    "filenameType": "str",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "encoding": "none",
+    "x": 1790,
+    "y": 340,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "file_control_log",
+    "type": "file",
+    "z": "tab_bushfire_sentinel",
+    "name": "Splunk control_commands.jsonl",
+    "filename": "${BUSHFIRE_SENTINEL_LOG_DIR}/control_commands.jsonl",
+    "filenameType": "str",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "encoding": "none",
+    "x": 1820,
+    "y": 400,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "file_actuator_log",
+    "type": "file",
+    "z": "tab_bushfire_sentinel",
+    "name": "Splunk actuator_feedback.jsonl",
+    "filename": "${BUSHFIRE_SENTINEL_LOG_DIR}/actuator_feedback.jsonl",
+    "filenameType": "str",
+    "appendNewline": true,
+    "createDir": true,
+    "overwriteFile": "false",
+    "encoding": "none",
+    "x": 1790,
+    "y": 460,
+    "wires": [
+      []
+    ]
+  },
+  {
+    "id": "debug_valid_sensor",
+    "type": "debug",
+    "z": "tab_bushfire_sentinel",
+    "name": "DEBUG valid sensor",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 940,
+    "y": 520,
+    "wires": []
+  },
+  {
+    "id": "debug_risk",
+    "type": "debug",
+    "z": "tab_bushfire_sentinel",
+    "name": "DEBUG risk analysis",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1790,
+    "y": 520,
+    "wires": []
+  },
+  {
+    "id": "debug_control",
+    "type": "debug",
+    "z": "tab_bushfire_sentinel",
+    "name": "DEBUG control command",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "payload",
+    "targetType": "msg",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1800,
+    "y": 600,
+    "wires": []
+  },
+  {
+    "id": "comment_splunk",
+    "type": "comment",
+    "z": "tab_bushfire_sentinel",
+    "name": "Splunk is primary dashboard",
+    "info": "Node-RED writes JSON-lines logs. Configure Splunk file monitoring for logs/*.jsonl and build dashboard/search panels there.",
+    "x": 170,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "comment_sprinkler",
+    "type": "comment",
+    "z": "tab_bushfire_sentinel",
+    "name": "sprinkler_status is actuator feedback",
+    "info": "Node-RED publishes sprinkler_command to cps/control. Python actuator_simulator returns sprinkler_status on cps/sensor/data.",
+    "x": 440,
+    "y": 40,
+    "wires": []
+  },
+  {
+    "id": "comment_aws_config",
+    "type": "comment",
+    "z": "tab_main",
+    "name": "AWS IoT nodes are disabled until configured",
+    "info": "Configure the AWS IoT endpoint, certificate, private key, and root CA, then enable the two AWS IoT MQTT out nodes for the final cloud demonstration.",
+    "x": 800,
+    "y": 520,
+    "wires": []
+  }
+]

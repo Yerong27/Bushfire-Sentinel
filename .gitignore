@@ -1,0 +1,10 @@
+.env
+.DS_Store
+__pycache__/
+*.pyc
+.venv/
+${BUSHFIRE_SENTINEL_LOG_DIR}/
+logs/*
+!logs/.gitkeep
+splunk/*.backup.json
+splunk/*_backup.json

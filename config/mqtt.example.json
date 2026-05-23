@@ -1,0 +1,11 @@
+{
+  "broker": "broker.hivemq.com",
+  "port": 1883,
+  "keepalive": 60,
+  "topics": {
+    "sensor_data": "cps/sensor/data",
+    "risk": "cps/analysis/risk",
+    "alerts": "cps/alerts",
+    "control": "cps/control"
+  }
+}

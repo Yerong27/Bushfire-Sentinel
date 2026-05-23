@@ -1,0 +1,14 @@
+{
+  "note": "Do not commit real AWS IoT Core certificates or private keys.",
+  "endpoint": "your-aws-iot-endpoint.iot.ap-southeast-2.amazonaws.com",
+  "port": 8883,
+  "topics": {
+    "sensor_data": "cps/sensor/data",
+    "risk": "cps/analysis/risk"
+  },
+  "node_red_setup": {
+    "client_certificate": "/path/to/device-certificate.pem.crt",
+    "private_key": "/path/to/private.pem.key",
+    "root_ca": "/path/to/AmazonRootCA1.pem"
+  }
+}
