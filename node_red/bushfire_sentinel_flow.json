@@ -198,6 +198,7 @@
       [
         "fn_jsonl_risk",
         "mqtt_aws_risk",
+        "fn_aws_risk_state_notification",
         "debug_risk"
       ],
       [
@@ -253,6 +254,39 @@
     "broker": "mqtt_aws_placeholder",
     "x": 1810,
     "y": 220,
+    "wires": [],
+    "d": true
+  },
+  {
+    "id": "fn_aws_risk_state_notification",
+    "type": "function",
+    "z": "tab_bushfire_sentinel",
+    "name": "AWS risk state notification filter",
+    "func": "const p = msg.payload || {};\nconst notificationKey = [\n  p.fire_risk_level,\n  p.response_capacity_status,\n  p.overall_system_status\n].join(\"|\");\nconst previousKey = context.get(\"last_notification_key\");\ncontext.set(\"last_notification_key\", notificationKey);\n\nconst shouldNotify = p.fire_risk_level === \"HIGH\"\n  || p.fire_risk_level === \"CRITICAL\"\n  || p.response_capacity_status === \"FAILED\";\n\nif (!shouldNotify || notificationKey === previousKey) {\n  return null;\n}\n\nmsg.payload = {\n  project_id: p.project_id,\n  timestamp: p.timestamp,\n  device_id: p.device_id,\n  event_type: \"risk_state_change\",\n  severity: p.fire_risk_level === \"CRITICAL\" || p.response_capacity_status === \"FAILED\" ? \"CRITICAL\" : \"HIGH\",\n  notification_key: notificationKey,\n  fire_risk_score: p.fire_risk_score,\n  fire_risk_level: p.fire_risk_level,\n  response_capacity_status: p.response_capacity_status,\n  overall_system_status: p.overall_system_status,\n  risk_factors: p.risk_factors,\n  candidate_command: p.candidate_command,\n  recommended_command: p.recommended_command,\n  message: p.overall_system_status + \": fire risk \" + p.fire_risk_level + \", response capacity \" + p.response_capacity_status\n};\nreturn msg;",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 1810,
+    "y": 460,
+    "wires": [
+      [
+        "mqtt_aws_risk_state_notification"
+      ]
+    ]
+  },
+  {
+    "id": "mqtt_aws_risk_state_notification",
+    "type": "mqtt out",
+    "z": "tab_bushfire_sentinel",
+    "name": "AWS IoT risk state notification (SNS rule)",
+    "topic": "cps/alerts/risk_state",
+    "qos": "0",
+    "retain": "",
+    "broker": "mqtt_aws_placeholder",
+    "x": 2160,
+    "y": 460,
     "wires": [],
     "d": true
   },
@@ -512,7 +546,7 @@
     "type": "comment",
     "z": "tab_main",
     "name": "AWS IoT nodes are disabled until configured",
-    "info": "Configure the AWS IoT endpoint, certificate, private key, and root CA, then enable the two AWS IoT MQTT out nodes for the final cloud demonstration.",
+    "info": "Configure the AWS IoT endpoint, certificate, private key, and root CA, then enable the AWS IoT MQTT out nodes for the final cloud demonstration. Use cps/analysis/risk for full risk telemetry and cps/alerts/risk_state for SNS-style state-change notifications.",
     "x": 800,
     "y": 520,
     "wires": []
