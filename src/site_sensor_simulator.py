@@ -14,8 +14,8 @@ from utils import utc_now
 
 AUTO_RANDOM_SCENARIO = "auto_random"
 AUTO_EVENT_PROBABILITIES = {
-    "smoke_spike": 0.015,
-    "smoke_incident": 0.025,
+    "smoke_spike": 0.004,
+    "smoke_incident": 0.006,
     "dry_soil_build_up": 0.04,
     "water_tank_drop": 0.03,
     "missing_value": 0.01,
@@ -30,19 +30,19 @@ SMOKE_INCIDENT_PROFILES = {
         "duration_seconds": (40, 90),
         "smoke_level": (60, 140),
         "soil_scenario": "rising_weather_risk",
-        "weight": 0.60,
+        "weight": 0.75,
     },
     "high_smoke_event": {
         "duration_seconds": (30, 60),
         "smoke_level": (150, 240),
         "soil_scenario": "high_fire_demo",
-        "weight": 0.30,
+        "weight": 0.20,
     },
     "critical_smoke_event": {
         "duration_seconds": (20, 45),
         "smoke_level": (250, 350),
         "soil_scenario": "critical_fire_demo",
-        "weight": 0.10,
+        "weight": 0.05,
     },
 }
 

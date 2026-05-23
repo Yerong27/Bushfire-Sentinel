@@ -212,9 +212,9 @@
           "#168653"
         ],
         "xAxisTitleText": "Time",
-        "yAxisTitleText": "Reading (ppm or %)"
+        "yAxisTitleText": "Smoke peak ppm / avg %"
       },
-      "title": "Main Site Local Sensors (mixed units)",
+      "title": "Main Site Local Sensors (2m buckets)",
       "type": "splunk.line"
     },
     "min_humidity_1h": {
@@ -565,7 +565,7 @@
     },
     "ds_local_trends": {
       "options": {
-        "query": "index=bushfire_sentinel (\"smoke_level\" OR \"soil_dryness\" OR \"water_tank_level\") | spath path=timestamp output=json_timestamp | spath path=device_id output=json_device_id | spath path=sensor output=json_sensor | spath path=value output=json_value | eval clean_time=replace(json_timestamp,\"Z\",\"+0000\") | eval event_time=coalesce(strptime(clean_time,\"%Y-%m-%dT%H:%M:%S.%3N%z\"),strptime(clean_time,\"%Y-%m-%dT%H:%M:%S%z\")) | eval _time=coalesce(event_time,_time) | eval reading=tonumber(json_value) | where json_device_id=\"station_01\" AND json_sensor IN (\"smoke_level\",\"soil_dryness\",\"water_tank_level\") AND isnotnull(reading) | eval metric=case(json_sensor=\"smoke_level\",\"Smoke (ppm)\",json_sensor=\"soil_dryness\",\"Soil Dryness (%)\",json_sensor=\"water_tank_level\",\"Water Tank (%)\",true(),json_sensor) | timechart span=2m avg(reading) by metric",
+        "query": "index=bushfire_sentinel (\"smoke_level\" OR \"soil_dryness\" OR \"water_tank_level\") | spath path=timestamp output=json_timestamp | spath path=device_id output=json_device_id | spath path=sensor output=json_sensor | spath path=value output=json_value | eval clean_time=replace(json_timestamp,\"Z\",\"+0000\") | eval event_time=coalesce(strptime(clean_time,\"%Y-%m-%dT%H:%M:%S.%3N%z\"),strptime(clean_time,\"%Y-%m-%dT%H:%M:%S%z\")) | eval _time=coalesce(event_time,_time) | eval reading=tonumber(json_value) | where json_device_id=\"station_01\" AND json_sensor IN (\"smoke_level\",\"soil_dryness\",\"water_tank_level\") AND isnotnull(reading) | eval smoke=if(json_sensor=\"smoke_level\",reading,null()), soil=if(json_sensor=\"soil_dryness\",reading,null()), water=if(json_sensor=\"water_tank_level\",reading,null()) | timechart span=2m max(smoke) as \"Smoke peak (ppm)\" avg(soil) as \"Soil Dryness avg (%)\" avg(water) as \"Water Tank avg (%)\"",
         "queryParameters": {
           "earliest": "$time_local.earliest$",
           "latest": "$time_local.latest$"
