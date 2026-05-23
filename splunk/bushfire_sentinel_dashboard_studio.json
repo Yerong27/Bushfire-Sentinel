@@ -205,14 +205,14 @@
       "options": {
         "backgroundColor": "#fbfefb",
         "legendDisplay": "right",
-        "nullValueDisplay": "connect",
+        "nullValueDisplay": "gaps",
         "seriesColors": [
           "#6d58c8",
           "#d97706",
           "#168653"
         ],
         "xAxisTitleText": "Time",
-        "yAxisTitleText": "Reading: ppm or %"
+        "yAxisTitleText": "Reading (ppm or %)"
       },
       "title": "Main Site Local Sensors (mixed units)",
       "type": "splunk.line"
@@ -245,7 +245,7 @@
         "sparklineDisplay": "off",
         "trendDisplay": "off",
         "underLabel": "Main site precipitation total",
-        "unit": " mm",
+        "unit": "mm",
         "unitPosition": "after"
       },
       "title": "Main Site Rain Last 1h",
@@ -322,7 +322,7 @@
           "#c92a2a"
         ],
         "xAxisTitleText": "Time",
-        "yAxisTitleText": "Rule score"
+        "yAxisTitleText": "Rule score /100"
       },
       "title": "Fire Risk Score Over Time",
       "type": "splunk.area"
@@ -374,20 +374,20 @@
       "options": {
         "backgroundColor": "#fbfefb",
         "columnFormat": {
+          "Avg 60m": {
+            "width": 103
+          },
+          "Latest": {
+            "width": 79
+          },
+          "Recent Trend": {
+            "width": 130
+          },
           "Sensor": {
             "width": 112
           },
           "Unit": {
-            "width": 58
-          },
-          "Recent Trend": {
-            "width": 120
-          },
-          "Latest": {
-            "width": 74
-          },
-          "Avg 60m": {
-            "width": 92
+            "width": 66
           }
         },
         "count": 7
@@ -468,9 +468,9 @@
           "#1f6fb2"
         ],
         "xAxisTitleText": "Site",
-        "yAxisTitleText": "Latest raw value"
+        "yAxisTitleText": "Latest reading"
       },
-      "title": "Temp and Wind By Site",
+      "title": "Latest Temp and Wind By Site",
       "type": "splunk.column"
     },
     "weather_risk_drivers": {
@@ -486,9 +486,9 @@
           "#1f6fb2"
         ],
         "xAxisTitleText": "Time",
-        "yAxisTitleText": "Raw value"
+        "yAxisTitleText": "Temperature C / Wind km/h"
       },
-      "title": "Main Site Weather Pressure",
+      "title": "Main Site Weather Drivers",
       "type": "splunk.line"
     }
   },
@@ -565,7 +565,7 @@
     },
     "ds_local_trends": {
       "options": {
-        "query": "index=bushfire_sentinel (\"smoke_level\" OR \"soil_dryness\" OR \"water_tank_level\") | spath path=timestamp output=json_timestamp | spath path=device_id output=json_device_id | spath path=sensor output=json_sensor | spath path=value output=json_value | eval clean_time=replace(json_timestamp,\"Z\",\"+0000\") | eval event_time=coalesce(strptime(clean_time,\"%Y-%m-%dT%H:%M:%S.%3N%z\"),strptime(clean_time,\"%Y-%m-%dT%H:%M:%S%z\")) | eval _time=coalesce(event_time,_time) | eval reading=tonumber(json_value) | where json_device_id=\"station_01\" AND json_sensor IN (\"smoke_level\",\"soil_dryness\",\"water_tank_level\") AND isnotnull(reading) | eval metric=case(json_sensor=\"smoke_level\",\"Smoke (ppm)\",json_sensor=\"soil_dryness\",\"Soil Dryness (%)\",json_sensor=\"water_tank_level\",\"Water Tank (%)\",true(),json_sensor) | timechart span=30s avg(reading) by metric",
+        "query": "index=bushfire_sentinel (\"smoke_level\" OR \"soil_dryness\" OR \"water_tank_level\") | spath path=timestamp output=json_timestamp | spath path=device_id output=json_device_id | spath path=sensor output=json_sensor | spath path=value output=json_value | eval clean_time=replace(json_timestamp,\"Z\",\"+0000\") | eval event_time=coalesce(strptime(clean_time,\"%Y-%m-%dT%H:%M:%S.%3N%z\"),strptime(clean_time,\"%Y-%m-%dT%H:%M:%S%z\")) | eval _time=coalesce(event_time,_time) | eval reading=tonumber(json_value) | where json_device_id=\"station_01\" AND json_sensor IN (\"smoke_level\",\"soil_dryness\",\"water_tank_level\") AND isnotnull(reading) | eval metric=case(json_sensor=\"smoke_level\",\"Smoke (ppm)\",json_sensor=\"soil_dryness\",\"Soil Dryness (%)\",json_sensor=\"water_tank_level\",\"Water Tank (%)\",true(),json_sensor) | timechart span=2m avg(reading) by metric",
         "queryParameters": {
           "earliest": "$time_local.earliest$",
           "latest": "$time_local.latest$"
@@ -788,8 +788,8 @@
             "item": "alert_table",
             "position": {
               "h": 344,
-              "w": 605,
-              "x": 825,
+              "w": 610,
+              "x": 820,
               "y": 634
             },
             "type": "block"
@@ -969,8 +969,8 @@
             "item": "local_trends",
             "position": {
               "h": 320,
-              "w": 910,
-              "x": 520,
+              "w": 890,
+              "x": 540,
               "y": 1050
             },
             "type": "block"
@@ -979,7 +979,7 @@
             "item": "sensor_sparklines",
             "position": {
               "h": 320,
-              "w": 500,
+              "w": 520,
               "x": 10,
               "y": 1050
             },
