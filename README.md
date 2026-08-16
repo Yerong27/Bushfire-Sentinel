@@ -10,6 +10,10 @@ Python simulators + Open-Meteo -> MQTT -> Node-RED -> JSONL logs -> Splunk Dashb
 
 Python publishes weather, local sensor, and actuator feedback messages. Node-RED validates, analyzes, logs, alerts, and sends sprinkler commands. Splunk monitors the JSONL logs and displays the operational dashboard.
 
+## Demo Video
+
+Recorded Splunk dashboard demonstration: [demo.mov](docs/media/demo.mov)
+
 ## Prerequisites
 
 - Python 3
