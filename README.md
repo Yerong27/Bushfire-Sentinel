@@ -12,7 +12,7 @@ Python publishes weather, local sensor, and actuator feedback messages. Node-RED
 
 ## Demo Video
 
-Recorded Splunk dashboard demonstration: [demo.mov](docs/media/demo.mov)
+Recorded Splunk dashboard demonstration: [Watch on YouTube](https://youtu.be/lBQ9JEF5AVk)
 
 ## Prerequisites
 
